@@ -1,11 +1,12 @@
 package com.project.store.product.controller;
 
 
+import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
 import com.project.store.product.service.ProductService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -22,5 +23,11 @@ public class ProductController {
     @GetMapping
     public List<ProductResponse> findAll(){
         return productService.findAll();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProductResponse create(@Valid @RequestBody ProductCreateRequest request){
+        return productService.create(request);
     }
 }

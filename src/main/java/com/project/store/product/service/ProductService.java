@@ -1,6 +1,7 @@
 package com.project.store.product.service;
 
 
+import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
 import com.project.store.product.entity.Product;
 import com.project.store.product.repository.ProductRepository;
@@ -28,5 +29,24 @@ public class ProductService {
                         product.getStockQuantity()
                 ))
                 .toList();
+    }
+
+    public ProductResponse create(ProductCreateRequest request) {
+        Product product = new Product(
+                request.name(),
+                request.description(),
+                request.price(),
+                request.stockQuantity()
+
+        );
+        Product savedProduct = productRepository.save(product);
+
+        return new ProductResponse(
+                savedProduct.getId(),
+                savedProduct.getName(),
+                savedProduct.getDescription(),
+                savedProduct.getPrice(),
+                savedProduct.getStockQuantity()
+        );
     }
 }
