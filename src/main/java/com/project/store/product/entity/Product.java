@@ -1,5 +1,6 @@
 package com.project.store.product.entity;
 
+import com.project.store.category.entity.Category;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -34,11 +35,17 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
 
-    public Product(String name, String description, BigDecimal price, int stockQuantity) {
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id" , nullable = false)
+    private Category category;
+
+    public Product(String name, String description, BigDecimal price, int stockQuantity, Category category) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.stockQuantity = stockQuantity;
+        this.category = category;
     }
 
 }

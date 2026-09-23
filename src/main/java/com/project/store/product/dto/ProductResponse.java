@@ -7,7 +7,9 @@ public record ProductResponse (
         String name,
         String description,
         BigDecimal price,
-        int stockQuantity
+        int stockQuantity,
+        Long categoryId,
+        String categoryName
 ){
 
 }

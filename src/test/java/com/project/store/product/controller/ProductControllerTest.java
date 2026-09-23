@@ -1,5 +1,6 @@
 package com.project.store.product.controller;
 
+import com.project.store.category.exception.CategoryNotFoundException;
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
 import com.project.store.product.dto.ProductUpdateRequest;
@@ -34,7 +35,7 @@ public class ProductControllerTest {
         when(productService.create(any(ProductCreateRequest.class)))
                 .thenReturn(new ProductResponse(
                         1L, "Klawiatura" , "Mechaniczna",
-                        new BigDecimal("199.99"),5
+                        new BigDecimal("199.99"),5,1L,"Elektronika"
                 ));
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -43,7 +44,8 @@ public class ProductControllerTest {
                                   "name": "Klawiatura",
                                   "description": "Mechaniczna",
                                   "price": 199.99,
-                                  "stockQuantity": 5
+                                  "stockQuantity": 5,
+                                  "categoryId": 1
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -73,13 +75,15 @@ public class ProductControllerTest {
                         "Klawiatura",
                         "mechaniczna",
                         new BigDecimal("199.99"),
-                        5
+                        5,1L,"Elektronika"
                 ));
         mockMvc.perform(get("/api/products/{id}",1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Klawiatura"))
-                .andExpect(jsonPath("$.price").value(199.99));
+                .andExpect(jsonPath("$.price").value(199.99))
+                .andExpect(jsonPath("$.categoryId").value(1))
+                .andExpect(jsonPath("$.categoryName").value("Elektronika"));
     }
 
     @Test
@@ -102,7 +106,7 @@ public class ProductControllerTest {
                         "Klawiatura Pro",
                         "Mechaniczna RGB",
                         new BigDecimal("249.99"),
-                        8
+                        8,1L,"Elektronika"
                 ));
         mockMvc.perform(put("/api/products/{id}",1L)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -111,14 +115,17 @@ public class ProductControllerTest {
                         "name": "Klawiatura Pro",
                         "description": "Mechaniczna RGB",
                         "price": 249.99,
-                        "stockQuantity": 8
+                        "stockQuantity": 8,
+                        "categoryId": 1
                         }
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Klawiatura Pro"))
                 .andExpect(jsonPath("$.price").value(249.99))
-                .andExpect(jsonPath("$.stockQuantity").value(8));
+                .andExpect(jsonPath("$.stockQuantity").value(8))
+                .andExpect(jsonPath("$.categoryId").value(1))
+                .andExpect(jsonPath("$.categoryName").value("Elektronika"));
     }
 
     @Test
@@ -147,7 +154,8 @@ public class ProductControllerTest {
                         "name": "Klawiatura Pro",
                         "description": "Mechaniczna RGB",
                         "price": 249.99,
-                        "stockQuantity": 8
+                        "stockQuantity": 8,
+                        "categoryId": 1
                         }
                         """))
                 .andExpect(status().isNotFound())
@@ -173,5 +181,25 @@ public class ProductControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Product Not Found"))
                 .andExpect(jsonPath("$.detail").value("Product with id 9999999 was not found"));
+    }
+    @Test
+    void returnsNotFoundWhenCreatingProductWithMissingCategory() throws Exception {
+        when(productService.create(any(ProductCreateRequest.class)))
+                .thenThrow(new CategoryNotFoundException(9999999L));
+
+        mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                         "name": "Klawiatura",
+                         "description": "Mechaniczna RGB",
+                         "price": 199.99,
+                         "stockQuantity": 5,
+                         "categoryId": 9999999
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Category Not Found"))
+                .andExpect(jsonPath("$.detail").value("Category with id 9999999 was not found"));
     }
 }

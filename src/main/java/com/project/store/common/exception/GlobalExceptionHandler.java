@@ -1,6 +1,7 @@
 package com.project.store.common.exception;
 
 import com.project.store.category.exception.CategoryAlreadyExistsException;
+import com.project.store.category.exception.CategoryNotFoundException;
 import com.project.store.product.exception.ProductNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -28,6 +29,15 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Category Already Exists");
+        return problem;
+    }
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ProblemDetail handleCategoryNotFound(CategoryNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage()
+        );
+        problem.setTitle("Category Not Found");
         return problem;
     }
 }
