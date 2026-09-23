@@ -4,6 +4,7 @@ package com.project.store.product.service;
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
 import com.project.store.product.entity.Product;
+import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +20,19 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
+    private ProductResponse toResponse(Product product) {
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity()
+        );
+    }
+
     public List<ProductResponse> findAll(){
         return productRepository.findAll().stream()
-                .map(product -> new ProductResponse(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPrice(),
-                        product.getStockQuantity()
-                ))
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -40,13 +45,10 @@ public class ProductService {
 
         );
         Product savedProduct = productRepository.save(product);
-
-        return new ProductResponse(
-                savedProduct.getId(),
-                savedProduct.getName(),
-                savedProduct.getDescription(),
-                savedProduct.getPrice(),
-                savedProduct.getStockQuantity()
-        );
+        return toResponse(savedProduct);
+    }
+    public ProductResponse findById(Long id) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+        return toResponse(product);
     }
 }

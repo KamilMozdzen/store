@@ -30,4 +30,8 @@ public class ProductController {
     public ProductResponse create(@Valid @RequestBody ProductCreateRequest request){
         return productService.create(request);
     }
+    @GetMapping("/{id}")
+    public ProductResponse findById(@PathVariable Long id){
+        return productService.findById(id);
+    }
 }

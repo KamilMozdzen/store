@@ -2,6 +2,7 @@ package com.project.store.product.controller;
 
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
+import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.service.ProductService;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
@@ -13,9 +14,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,5 +65,33 @@ public class ProductControllerTest {
                           """))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(productService);
+    }
+    @Test
+    void returnsProductById() throws Exception {
+        when(productService.findById(1L))
+                .thenReturn(new ProductResponse(
+                        1L,
+                        "Klawiatura",
+                        "mechaniczna",
+                        new BigDecimal("199.99"),
+                        5
+                ));
+        mockMvc.perform(get("/api/products/{id}",1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Klawiatura"))
+                .andExpect(jsonPath("$.price").value(199.99));
+    }
+
+    @Test
+    void returnsNotFoundWhenProductDoesNotExist() throws Exception {
+        when(productService.findById(9999999L))
+                .thenThrow(new ProductNotFoundException(9999999L));
+
+        mockMvc.perform(get("/api/products/{id}",9999999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Product Not Found"))
+                .andExpect(jsonPath("$.detail")
+                .value("Product with id 9999999 was not found"));
     }
 }
