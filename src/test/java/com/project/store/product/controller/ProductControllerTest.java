@@ -15,11 +15,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -158,5 +156,22 @@ public class ProductControllerTest {
                         .value("Product with id 9999999 was not found"));
 
 
+    }
+    @Test
+    void deleteProduct() throws Exception {
+        mockMvc.perform(delete("/api/products/{id}",1L))
+                .andExpect(status().isNoContent());
+        verify(productService).delete(1L);
+    }
+
+    @Test
+    void returnsNotFoundWhenDeletingMissingProduct() throws Exception {
+        doThrow(new ProductNotFoundException(9999999L))
+                .when(productService).delete(9999999L);
+
+        mockMvc.perform(delete("/api/products/{id}",9999999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Product Not Found"))
+                .andExpect(jsonPath("$.detail").value("Product with id 9999999 was not found"));
     }
 }
