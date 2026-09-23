@@ -3,6 +3,7 @@ package com.project.store.product.controller;
 
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
+import com.project.store.product.dto.ProductUpdateRequest;
 import com.project.store.product.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -33,5 +34,10 @@ public class ProductController {
     @GetMapping("/{id}")
     public ProductResponse findById(@PathVariable Long id){
         return productService.findById(id);
+    }
+
+    @PutMapping("/{id}")
+    public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request){
+        return productService.update(id, request);
     }
 }

@@ -2,6 +2,7 @@ package com.project.store.product.controller;
 
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
+import com.project.store.product.dto.ProductUpdateRequest;
 import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.service.ProductService;
 import org.springframework.http.MediaType;
@@ -14,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 
-
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -93,5 +94,69 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.title").value("Product Not Found"))
                 .andExpect(jsonPath("$.detail")
                 .value("Product with id 9999999 was not found"));
+    }
+
+    @Test
+    void updateProduct() throws Exception {
+        when(productService.update(eq(1L), any(ProductUpdateRequest.class)))
+                .thenReturn(new ProductResponse(
+                        1L,
+                        "Klawiatura Pro",
+                        "Mechaniczna RGB",
+                        new BigDecimal("249.99"),
+                        8
+                ));
+        mockMvc.perform(put("/api/products/{id}",1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "name": "Klawiatura Pro",
+                        "description": "Mechaniczna RGB",
+                        "price": 249.99,
+                        "stockQuantity": 8
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Klawiatura Pro"))
+                .andExpect(jsonPath("$.price").value(249.99))
+                .andExpect(jsonPath("$.stockQuantity").value(8));
+    }
+
+    @Test
+    void rejectsInvalidProductUpdate() throws Exception {
+        mockMvc.perform(put("/api/products/{id}",1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "name": "",
+                        "price": 0,
+                        "stockQuantity": -1
+                        }
+                        """))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(productService);
+    }
+    @Test
+    void returnsNotFoundWhenUpdatingMissingProduct() throws Exception {
+        when(productService.update(eq(9999999L), any(ProductUpdateRequest.class)))
+                .thenThrow(new ProductNotFoundException(9999999L));
+
+        mockMvc.perform(put("/api/products/{id}",9999999L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "name": "Klawiatura Pro",
+                        "description": "Mechaniczna RGB",
+                        "price": 249.99,
+                        "stockQuantity": 8
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Product Not Found"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Product with id 9999999 was not found"));
+
+
     }
 }

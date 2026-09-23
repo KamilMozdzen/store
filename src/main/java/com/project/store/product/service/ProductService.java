@@ -3,6 +3,7 @@ package com.project.store.product.service;
 
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
+import com.project.store.product.dto.ProductUpdateRequest;
 import com.project.store.product.entity.Product;
 import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.repository.ProductRepository;
@@ -48,7 +49,20 @@ public class ProductService {
         return toResponse(savedProduct);
     }
     public ProductResponse findById(Long id) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
         return toResponse(product);
+    }
+    public ProductResponse update(Long id, ProductUpdateRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+
+        product.setName(request.name());
+        product.setDescription(request.description());
+        product.setPrice(request.price());
+        product.setStockQuantity(request.stockQuantity());
+
+        Product savedProduct = productRepository.save(product);
+        return toResponse(savedProduct);
     }
 }
