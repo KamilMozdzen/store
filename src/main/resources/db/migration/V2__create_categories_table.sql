@@ -1,0 +1,5 @@
+CREATE TABLE categories(
+  id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(80) NOT NULL,
+  CONSTRAINT uk_categories_name UNIQUE (name)
+);
