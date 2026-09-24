@@ -1,11 +1,13 @@
 package com.project.store.product.controller;
 
 import com.project.store.category.exception.CategoryNotFoundException;
+import com.project.store.common.dto.PageResponse;
 import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
 import com.project.store.product.dto.ProductUpdateRequest;
 import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.service.ProductService;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 import static org.mockito.ArgumentMatchers.any;
@@ -201,5 +204,58 @@ public class ProductControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Category Not Found"))
                 .andExpect(jsonPath("$.detail").value("Category with id 9999999 was not found"));
+    }
+    @Test
+    void returnsPagedProducts() throws Exception {
+        ProductResponse productResponse = new ProductResponse(
+                1L,
+                "Klawiatura",
+                "Mechaniczna",
+                new BigDecimal("199.99"),
+                5,
+                2L,
+                "Elektronika"
+        );
+
+        when(productService.findAll(isNull(), any(Pageable.class)))
+                .thenReturn(new PageResponse<>(
+                        List.of(productResponse),
+                        0,
+                        12,
+                        1,
+                        1
+                ));
+
+        mockMvc.perform(get("/api/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Klawiatura"))
+                .andExpect(jsonPath("$.content[0].categoryName").value("Elektronika"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(12))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void filtersProductsByCategory() throws Exception {
+        when(productService.findAll(eq(2L), any(Pageable.class)))
+                .thenReturn(new PageResponse<>(
+                    List.of(),
+                    0,
+                    10,
+                    0,
+                    0
+                ));
+        mockMvc.perform(get("/api/products")
+                .param("categoryId", "2")
+                .param("page", "0")
+                .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        verify(productService).findAll(eq(2L),any(Pageable.class));
     }
 }

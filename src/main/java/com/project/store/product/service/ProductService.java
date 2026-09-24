@@ -14,7 +14,9 @@ import com.project.store.product.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.project.store.common.dto.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Transactional(readOnly = true)
 @Service
@@ -40,10 +42,11 @@ public class ProductService {
         );
     }
 
-    public List<ProductResponse> findAll(){
-        return productRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+    public PageResponse<ProductResponse> findAll(Long categoryId, Pageable pageable) {
+        Page<Product> products = categoryId == null ? productRepository.findAll(pageable)
+                : productRepository.findAllByCategory_Id(categoryId, pageable);
+
+        return PageResponse.from(products.map(this::toResponse));
     }
 
     @Transactional

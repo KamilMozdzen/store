@@ -9,7 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.project.store.common.dto.PageResponse;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 @RestController
 @RequestMapping("/api/products")
@@ -22,8 +24,11 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<ProductResponse> findAll(){
-        return productService.findAll();
+    public PageResponse<ProductResponse> findAll(
+            @RequestParam(required = false) Long categoryId,
+            @PageableDefault(size = 12, sort = "name") Pageable pageable
+    ) {
+        return productService.findAll(categoryId, pageable);
     }
 
     @PostMapping
