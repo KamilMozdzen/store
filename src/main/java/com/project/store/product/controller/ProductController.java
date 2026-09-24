@@ -25,10 +25,11 @@ public class ProductController {
 
     @GetMapping
     public PageResponse<ProductResponse> findAll(
+            @RequestParam(required = false) String query,
             @RequestParam(required = false) Long categoryId,
             @PageableDefault(size = 12, sort = "name") Pageable pageable
-    ) {
-        return productService.findAll(categoryId, pageable);
+    ){
+        return productService.findAll(query, categoryId, pageable);
     }
 
     @PostMapping

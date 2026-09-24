@@ -42,9 +42,18 @@ public class ProductService {
         );
     }
 
-    public PageResponse<ProductResponse> findAll(Long categoryId, Pageable pageable) {
-        Page<Product> products = categoryId == null ? productRepository.findAll(pageable)
-                : productRepository.findAllByCategory_Id(categoryId, pageable);
+    public PageResponse<ProductResponse> findAll(
+            String query,
+            Long categoryId,
+            Pageable pageable
+    ){
+        String searchTerm = query == null ? "" : query.trim();
+
+        Page<Product> products = productRepository.search(
+                searchTerm,
+                categoryId,
+                pageable
+        );
 
         return PageResponse.from(products.map(this::toResponse));
     }
