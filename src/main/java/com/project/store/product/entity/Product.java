@@ -1,6 +1,7 @@
 package com.project.store.product.entity;
 
 import com.project.store.category.entity.Category;
+import com.project.store.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -47,5 +48,17 @@ public class Product {
         this.stockQuantity = stockQuantity;
         this.category = category;
     }
+
+    public void decreaseStock(int quantity){
+        if(quantity < 1){
+            throw new IllegalArgumentException("Quantity must be greater than zero");
+        }
+
+        if(quantity > stockQuantity){
+            throw new InsufficientStockException(id,stockQuantity,quantity);
+        }
+        stockQuantity -= quantity;
+    }
+
 
 }

@@ -3,6 +3,7 @@ package com.project.store.common.exception;
 import com.project.store.category.exception.CategoryAlreadyExistsException;
 import com.project.store.category.exception.CategoryInUseException;
 import com.project.store.category.exception.CategoryNotFoundException;
+import com.project.store.product.exception.InsufficientStockException;
 import com.project.store.product.exception.ProductNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -69,6 +70,15 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Category In Use");
+        return problem;
+    }
+    @ExceptionHandler(InsufficientStockException.class)
+    public ProblemDetail handleInsufficientStock(InsufficientStockException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage()
+        );
+        problem.setTitle("Insufficient Stock");
         return problem;
     }
 }
