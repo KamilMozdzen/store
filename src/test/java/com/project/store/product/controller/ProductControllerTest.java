@@ -217,14 +217,17 @@ public class ProductControllerTest {
                 "Elektronika"
         );
 
-        when(productService.findAll(isNull(), any(Pageable.class)))
-                .thenReturn(new PageResponse<>(
-                        List.of(productResponse),
-                        0,
-                        12,
-                        1,
-                        1
-                ));
+        when(productService.findAll(
+                isNull(),
+                isNull(),
+                any(Pageable.class)
+        )).thenReturn(new PageResponse<>(
+                List.of(productResponse),
+                0,
+                12,
+                1,
+                1
+        ));
 
         mockMvc.perform(get("/api/products"))
                 .andExpect(status().isOk())
@@ -239,14 +242,17 @@ public class ProductControllerTest {
 
     @Test
     void filtersProductsByCategory() throws Exception {
-        when(productService.findAll(eq(2L), any(Pageable.class)))
-                .thenReturn(new PageResponse<>(
-                    List.of(),
-                    0,
-                    10,
-                    0,
-                    0
-                ));
+        when(productService.findAll(
+                isNull(),
+                eq(2L),
+                any(Pageable.class)
+        )).thenReturn(new PageResponse<>(
+                List.of(),
+                0,
+                10,
+                0,
+                0
+        ));
         mockMvc.perform(get("/api/products")
                 .param("categoryId", "2")
                 .param("page", "0")
@@ -256,6 +262,42 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(0));
-        verify(productService).findAll(eq(2L),any(Pageable.class));
+        verify(productService).findAll(isNull(),eq(2L),any(Pageable.class));
+    }
+
+    @Test
+    void searchesProductsByName() throws Exception {
+        ProductResponse product = new ProductResponse(
+                1L,
+                "Klawiatura",
+                "Mechaniczna RGB",
+                new BigDecimal("249.99"),
+                5,
+                1L,
+                "Elektronika"
+        );
+        when(productService.findAll(
+                eq("klaw"),
+                isNull(),
+                any(Pageable.class)
+        )).thenReturn(new PageResponse<>(
+                List.of(product),
+                0,
+                12,
+                1,
+                1
+        ));
+
+        mockMvc.perform(get("/api/products")
+                .param("query", "klaw"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("Klawiatura"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        verify(productService).findAll(
+                eq("klaw"),
+                isNull(),
+                any(Pageable.class)
+        );
     }
 }
