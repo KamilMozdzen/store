@@ -3,6 +3,8 @@ package com.project.store.order.service;
 import com.project.store.order.dto.OrderCreateRequest;
 import com.project.store.order.dto.OrderItemRequest;
 import com.project.store.order.entity.CustomerOrder;
+import com.project.store.order.entity.OrderItem;
+import com.project.store.order.entity.OrderStatus;
 import com.project.store.order.repository.CustomerOrderRepository;
 import com.project.store.product.entity.Product;
 import com.project.store.product.exception.InsufficientStockException;
@@ -12,8 +14,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,5 +98,77 @@ public class OrderServiceTest {
                 .hasMessage("Product with id 1 has only 1 item available, requested 2");
 
         verify(orderRepository, never()).save(any(CustomerOrder.class));
+    }
+    @Test
+    void returnsPagedOrderSummaries() {
+        CustomerOrder order = org.mockito.Mockito.mock(CustomerOrder.class);
+        Instant createdAt = Instant.parse("2026-09-29T10:00:00Z");
+
+        when(order.getId()).thenReturn(10L);
+        when(order.getCustomerName()).thenReturn("Jan Kowalski");
+        when(order.getCustomerEmail()).thenReturn("jan@example.com");
+        when(order.getStatus()).thenReturn(OrderStatus.NEW);
+        when(order.getTotalAmount())
+                .thenReturn(new BigDecimal("399.98"));
+        when(order.getCreatedAt()).thenReturn(createdAt);
+
+        var pageable = PageRequest.of(0, 20);
+
+        when(orderRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(
+                        List.of(order),
+                        pageable,
+                        1
+                ));
+
+        var response = orderService.findAll(pageable);
+
+        assertThat(response.page()).isZero();
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().getFirst().id()).isEqualTo(10L);
+        assertThat(response.content().getFirst().status())
+                .isEqualTo(OrderStatus.NEW);
+        assertThat(response.content().getFirst().totalAmount())
+                .isEqualByComparingTo("399.98");
+    }
+    @Test
+    void returnsOrderDetails() {
+        CustomerOrder order = org.mockito.Mockito.mock(CustomerOrder.class);
+        OrderItem item = org.mockito.Mockito.mock(OrderItem.class);
+        Product product = org.mockito.Mockito.mock(Product.class);
+        Instant createdAt = Instant.parse("2026-09-29T10:00:00Z");
+
+        when(order.getId()).thenReturn(10L);
+        when(order.getCustomerName()).thenReturn("Jan Kowalski");
+        when(order.getCustomerEmail()).thenReturn("jan@example.com");
+        when(order.getStatus()).thenReturn(OrderStatus.NEW);
+        when(order.getTotalAmount())
+                .thenReturn(new BigDecimal("399.98"));
+        when(order.getCreatedAt()).thenReturn(createdAt);
+        when(order.getItems()).thenReturn(List.of(item));
+
+        when(item.getProduct()).thenReturn(product);
+        when(product.getId()).thenReturn(1L);
+        when(item.getProductName()).thenReturn("Klawiatura");
+        when(item.getUnitPrice())
+                .thenReturn(new BigDecimal("199.99"));
+        when(item.getQuantity()).thenReturn(2);
+        when(item.getLineTotal())
+                .thenReturn(new BigDecimal("399.98"));
+
+        when(orderRepository.findDetailedById(10L))
+                .thenReturn(Optional.of(order));
+
+        var response = orderService.findById(10L);
+
+        assertThat(response.id()).isEqualTo(10L);
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().productId()).isEqualTo(1L);
+        assertThat(response.items().getFirst().productName())
+                .isEqualTo("Klawiatura");
+        assertThat(response.items().getFirst().lineTotal())
+                .isEqualByComparingTo("399.98");
     }
 }

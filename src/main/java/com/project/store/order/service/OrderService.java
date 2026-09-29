@@ -1,14 +1,17 @@
 package com.project.store.order.service;
 
-import com.project.store.order.dto.OrderCreateRequest;
-import com.project.store.order.dto.OrderItemRequest;
-import com.project.store.order.dto.OrderItemResponse;
-import com.project.store.order.dto.OrderResponse;
+import com.project.store.common.dto.PageResponse;
+import com.project.store.order.dto.*;
 import com.project.store.order.entity.CustomerOrder;
+import com.project.store.order.exception.OrderNotFoundException;
 import com.project.store.order.repository.CustomerOrderRepository;
 import com.project.store.product.entity.Product;
 import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.repository.ProductRepository;
+import com.project.store.order.dto.OrderSummaryResponse;
+import org.springframework.data.domain.Page;
+
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-
+@Transactional(readOnly = true)
 @Service
 public class OrderService {
     private final CustomerOrderRepository orderRepository;
@@ -76,6 +79,28 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getCreatedAt(),
                 items
+        );
+    }
+    public PageResponse<OrderSummaryResponse> findAll(Pageable pageable) {
+        Page<OrderSummaryResponse> orders = orderRepository
+                .findAll(pageable)
+                .map(this::toSummaryResponse);
+        return PageResponse.from(orders);
+    }
+    public OrderResponse findById(Long id) {
+        CustomerOrder order = orderRepository.findDetailedById(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+
+        return toResponse(order);
+    }
+    private OrderSummaryResponse toSummaryResponse(CustomerOrder order){
+        return new OrderSummaryResponse(
+                order.getId(),
+                order.getCustomerName(),
+                order.getCustomerEmail(),
+                order.getStatus(),
+                order.getTotalAmount(),
+                order.getCreatedAt()
         );
     }
 
