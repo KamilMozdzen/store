@@ -2,6 +2,7 @@ package com.project.store.category.controller;
 
 import com.project.store.category.dto.CategoryCreateRequest;
 import com.project.store.category.dto.CategoryResponse;
+import com.project.store.category.dto.CategoryUpdateRequest;
 import com.project.store.category.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,5 +27,24 @@ public class CategoryController {
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryResponse create(@Valid @RequestBody CategoryCreateRequest request){
         return categoryService.create(request);
+    }
+
+    @GetMapping("/{id}")
+    public CategoryResponse findById(@PathVariable Long id){
+        return categoryService.findById(id);
+    }
+
+    @PutMapping("/{id}")
+    public CategoryResponse update(
+            @PathVariable Long id,
+            @Valid @RequestBody CategoryUpdateRequest request
+    ){
+        return categoryService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id){
+        categoryService.delete(id);
     }
 }
