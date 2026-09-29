@@ -67,7 +67,10 @@ public class ProductControllerTest {
                             "stockQuantity": 5
                           }
                           """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation Failed"))
+                .andExpect(jsonPath("$.detail").value("One or more fields are invalid"))
+                .andExpect(jsonPath("$.errors.name").value("Name is required"));
         verifyNoInteractions(productService);
     }
     @Test
@@ -142,7 +145,12 @@ public class ProductControllerTest {
                         "stockQuantity": -1
                         }
                         """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation Failed"))
+                .andExpect(jsonPath("$.errors.name").value("Name is required"))
+                .andExpect(jsonPath("$.errors.price").value("Price must be at least 0.01"))
+                .andExpect(jsonPath("$.errors.stockQuantity").value("Stock quantity cannot be negative"))
+                .andExpect(jsonPath("$.errors.categoryId").value("Category is required"));
         verifyNoInteractions(productService);
     }
     @Test

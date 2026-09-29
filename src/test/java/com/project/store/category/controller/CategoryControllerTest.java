@@ -71,7 +71,9 @@ public class CategoryControllerTest {
                         "name": ""
                         }
                         """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation Failed"))
+                .andExpect(jsonPath("$.errors.name").value("Name is required"));
         verifyNoInteractions(categoryService);
     }
     @Test
