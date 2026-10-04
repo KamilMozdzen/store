@@ -2,6 +2,7 @@ package com.project.store.order.service;
 
 import com.project.store.order.dto.OrderCreateRequest;
 import com.project.store.order.dto.OrderItemRequest;
+import com.project.store.order.dto.OrderStatusUpdateRequest;
 import com.project.store.order.entity.CustomerOrder;
 import com.project.store.order.entity.OrderItem;
 import com.project.store.order.entity.OrderStatus;
@@ -170,5 +171,34 @@ public class OrderServiceTest {
                 .isEqualTo("Klawiatura");
         assertThat(response.items().getFirst().lineTotal())
                 .isEqualByComparingTo("399.98");
+    }
+    @Test
+    void restoresStockWhenOrderIsCancelled() {
+        Product product = org.mockito.Mockito.mock(Product.class);
+
+        when(product.getId()).thenReturn(1L);
+        when(product.getName()).thenReturn("Klawiatura");
+        when(product.getPrice()).thenReturn(new BigDecimal("199.99"));
+
+        CustomerOrder order = new CustomerOrder(
+                "Jan Kowalski",
+                "jan@example.com"
+        );
+        order.addProduct(product, 2);
+
+        when(orderRepository.findDetailedByIdForUpdate(10L))
+                .thenReturn(Optional.of(order));
+
+        var response = orderService.updateStatus(
+                10L,
+                new OrderStatusUpdateRequest(OrderStatus.CANCELLED)
+        );
+
+        assertThat(response.status())
+                .isEqualTo(OrderStatus.CANCELLED);
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().quantity()).isEqualTo(2);
+
+        verify(product).increaseStock(2);
     }
 }

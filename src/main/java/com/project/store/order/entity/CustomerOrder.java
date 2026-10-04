@@ -1,5 +1,6 @@
 package com.project.store.order.entity;
 
+import com.project.store.order.exception.InvalidOrderStatusTransitionException;
 import com.project.store.product.entity.Product;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -62,5 +63,21 @@ public class CustomerOrder {
         OrderItem item = new OrderItem(this, product, quantity);
         items.add(item);
         totalAmount = totalAmount.add(item.getLineTotal());
+    }
+    public void changeStatus(OrderStatus target){
+        if(status == target){
+            return;
+        }
+        boolean allowed = switch(status){
+            case NEW -> target == OrderStatus.PAID
+                    || target == OrderStatus.CANCELLED;
+            case PAID -> target == OrderStatus.SHIPPED
+                    || target == OrderStatus.CANCELLED;
+            case SHIPPED,CANCELLED -> false;
+        };
+        if(!allowed){
+            throw new InvalidOrderStatusTransitionException(status,target);
+        }
+        status = target;
     }
 }

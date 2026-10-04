@@ -1,5 +1,6 @@
 package com.project.store.order.controller;
 
+import com.project.store.order.dto.OrderStatusUpdateRequest;
 import com.project.store.common.dto.PageResponse;
 import com.project.store.order.dto.OrderCreateRequest;
 import com.project.store.order.dto.OrderResponse;
@@ -35,5 +36,12 @@ public class OrderController {
     @GetMapping("/{id}")
     public OrderResponse findById(@PathVariable Long id){
         return orderService.findById(id);
+    }
+    @PatchMapping("/{id}/status")
+    public OrderResponse updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody OrderStatusUpdateRequest request
+    ){
+        return orderService.updateStatus(id, request);
     }
 }

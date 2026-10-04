@@ -59,6 +59,12 @@ public class Product {
         }
         stockQuantity -= quantity;
     }
+    public void increaseStock(int quantity){
+        if(quantity < 1){
+            throw new IllegalArgumentException("Quantity must be greater than zero");
+        }
+        stockQuantity = Math.addExact(stockQuantity, quantity);
+    }
 
 
 }

@@ -10,6 +10,8 @@ import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.product.repository.ProductRepository;
 import com.project.store.order.dto.OrderSummaryResponse;
 import org.springframework.data.domain.Page;
+import com.project.store.order.dto.OrderStatusUpdateRequest;
+import com.project.store.order.entity.OrderStatus;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -102,6 +104,22 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getCreatedAt()
         );
+    }
+    @Transactional
+    public OrderResponse updateStatus(Long id, OrderStatusUpdateRequest request) {
+        CustomerOrder order = orderRepository
+                .findDetailedByIdForUpdate(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+
+        OrderStatus previousStatus = order.getStatus();
+        order.changeStatus(request.status());
+
+        if(request.status() == OrderStatus.CANCELLED
+            && previousStatus != OrderStatus.CANCELLED){
+            order.getItems().forEach(item ->
+                    item.getProduct().increaseStock(item.getQuantity()));
+        }
+        return toResponse(order);
     }
 
 }

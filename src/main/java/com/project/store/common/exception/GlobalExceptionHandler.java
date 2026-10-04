@@ -3,6 +3,7 @@ package com.project.store.common.exception;
 import com.project.store.category.exception.CategoryAlreadyExistsException;
 import com.project.store.category.exception.CategoryInUseException;
 import com.project.store.category.exception.CategoryNotFoundException;
+import com.project.store.order.exception.InvalidOrderStatusTransitionException;
 import com.project.store.order.exception.OrderNotFoundException;
 import com.project.store.product.exception.InsufficientStockException;
 import com.project.store.product.exception.ProductNotFoundException;
@@ -89,6 +90,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Order Not Found");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidOrderStatusTransitionException.class)
+    public ProblemDetail handleInvalidOrderStatusTransition(InvalidOrderStatusTransitionException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage()
+        );
+        problem.setTitle("Invalid Order Status Transition");
         return problem;
     }
 }

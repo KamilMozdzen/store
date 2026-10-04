@@ -1,5 +1,7 @@
 package com.project.store.order.controller;
 
+import com.project.store.order.dto.OrderStatusUpdateRequest;
+import com.project.store.order.exception.InvalidOrderStatusTransitionException;
 import com.project.store.common.dto.PageResponse;
 import com.project.store.order.dto.OrderCreateRequest;
 import com.project.store.order.dto.OrderItemResponse;
@@ -21,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -193,5 +197,72 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.title").value("Order Not Found"))
                 .andExpect(jsonPath("$.detail")
                         .value("Order with id 999999 was not found"));
+    }
+    @Test
+    void updatesOrderStatus() throws Exception {
+        when(orderService.updateStatus(
+                eq(10L),
+                any(OrderStatusUpdateRequest.class)
+        )).thenReturn(new OrderResponse(
+                10L,
+                "Jan Kowalski",
+                "jan@example.com",
+                OrderStatus.PAID,
+                new BigDecimal("399.98"),
+                Instant.parse("2026-09-29T10:00:00Z"),
+                List.of()
+        ));
+
+        mockMvc.perform(patch("/api/orders/{id}/status", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "status": "PAID"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.status").value("PAID"));
+    }
+    @Test
+    void returnsConflictForInvalidStatusTransition() throws Exception {
+        when(orderService.updateStatus(
+                eq(10L),
+                any(OrderStatusUpdateRequest.class)
+        )).thenThrow(
+                new InvalidOrderStatusTransitionException(
+                        OrderStatus.SHIPPED,
+                        OrderStatus.NEW
+                )
+        );
+
+        mockMvc.perform(patch("/api/orders/{id}/status", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "status": "NEW"
+                            }
+                            """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title")
+                        .value("Invalid Order Status Transition"))
+                .andExpect(jsonPath("$.detail")
+                        .value(
+                                "Cannot change order status from SHIPPED to NEW"
+                        ));
+    }
+    @Test
+    void rejectsMissingOrderStatus() throws Exception {
+        mockMvc.perform(patch("/api/orders/{id}/status", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                            }
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title")
+                        .value("Validation Failed"))
+                .andExpect(jsonPath("$.errors.status")
+                        .value("Status is required"));
     }
 }
