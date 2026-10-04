@@ -7,6 +7,7 @@ import com.project.store.order.exception.InvalidOrderStatusTransitionException;
 import com.project.store.order.exception.OrderNotFoundException;
 import com.project.store.product.exception.InsufficientStockException;
 import com.project.store.product.exception.ProductNotFoundException;
+import com.project.store.user.exception.EmailAlreadyUsedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -100,6 +101,15 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Invalid Order Status Transition");
+        return problem;
+    }
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ProblemDetail handleEmailAlreadyUsed(EmailAlreadyUsedException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage()
+        );
+        problem.setTitle("Email Already Used");
         return problem;
     }
 }
