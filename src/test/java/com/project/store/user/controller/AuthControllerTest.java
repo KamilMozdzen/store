@@ -1,12 +1,17 @@
 package com.project.store.user.controller;
 
+import com.project.store.user.dto.AuthResponse;
+import com.project.store.user.dto.UserLoginRequest;
 import com.project.store.user.dto.UserRegisterRequest;
 import com.project.store.user.dto.UserResponse;
 import com.project.store.user.entity.UserRole;
 import com.project.store.user.exception.EmailAlreadyUsedException;
+import com.project.store.user.exception.InvalidCredentialsException;
+import com.project.store.user.service.AuthService;
 import com.project.store.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(AuthController.class)
 class AuthControllerTest {
 
@@ -29,6 +35,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private AuthService authService;
 
     @Test
     void registersUser() throws Exception {
@@ -110,5 +119,66 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.title").value("Email Already Used"))
                 .andExpect(jsonPath("$.detail")
                         .value("Email 'kamil@example.com' is already registered"));
+    }
+    @Test
+    void logsInUser() throws Exception {
+        when(authService.login(any(UserLoginRequest.class)))
+                .thenReturn(new AuthResponse(
+                        "jwt-token",
+                        "Bearer",
+                        3600
+                ));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "email": "kamil@example.com",
+                              "password": "BezpieczneHaslo123!"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.expiresIn").value(3600));
+    }
+    @Test
+    void rejectsInvalidLoginData() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "email": "invalid-email",
+                              "password": ""
+                            }
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title")
+                        .value("Validation Failed"))
+                .andExpect(jsonPath("$.errors.email")
+                        .value("Email must be valid"))
+                .andExpect(jsonPath("$.errors.password")
+                        .value("Password is required"));
+
+        verifyNoInteractions(authService);
+    }
+    @Test
+    void returnsUnauthorizedForInvalidCredentials() throws Exception {
+        when(authService.login(any(UserLoginRequest.class)))
+                .thenThrow(new InvalidCredentialsException());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "email": "kamil@example.com",
+                              "password": "NiepoprawneHaslo"
+                            }
+                            """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.title")
+                        .value("Invalid Credentials"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Invalid email or password"));
     }
 }

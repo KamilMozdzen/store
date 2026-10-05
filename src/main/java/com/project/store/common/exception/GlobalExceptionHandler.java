@@ -8,6 +8,7 @@ import com.project.store.order.exception.OrderNotFoundException;
 import com.project.store.product.exception.InsufficientStockException;
 import com.project.store.product.exception.ProductNotFoundException;
 import com.project.store.user.exception.EmailAlreadyUsedException;
+import com.project.store.user.exception.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -110,6 +111,15 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Email Already Used");
+        return problem;
+    }
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail handleInvalidCredentials(InvalidCredentialsException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage()
+        );
+        problem.setTitle("Invalid Credentials");
         return problem;
     }
 }
