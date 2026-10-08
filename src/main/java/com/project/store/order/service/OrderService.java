@@ -12,13 +12,15 @@ import com.project.store.order.dto.OrderSummaryResponse;
 import org.springframework.data.domain.Page;
 import com.project.store.order.dto.OrderStatusUpdateRequest;
 import com.project.store.order.entity.OrderStatus;
+import com.project.store.user.entity.AppUser;
+import com.project.store.user.exception.InvalidCredentialsException;
+import com.project.store.user.repository.AppUserRepository;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
 @Transactional(readOnly = true)
@@ -26,18 +28,23 @@ import java.util.Map;
 public class OrderService {
     private final CustomerOrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final AppUserRepository userRepository;
 
-    public OrderService(CustomerOrderRepository orderRepository, ProductRepository productRepository) {
+    public OrderService(CustomerOrderRepository orderRepository,
+                        ProductRepository productRepository,
+                        AppUserRepository userRepository)
+    {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
-    public OrderResponse create(OrderCreateRequest request) {
-        CustomerOrder order = new CustomerOrder(
-            request.customerName().trim(),
-            request.customerEmail().trim().toLowerCase(Locale.ROOT)
-        );
+    public OrderResponse create(OrderCreateRequest request,String authenticatedEmail) {
+        AppUser user = userRepository
+                .findByEmailIgnoreCase(authenticatedEmail)
+                .orElseThrow(InvalidCredentialsException::new);
+        CustomerOrder order = new CustomerOrder(user);
 
         Map<Long, Integer> quantities = aggregateItems(request);
 

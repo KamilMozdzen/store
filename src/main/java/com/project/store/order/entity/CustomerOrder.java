@@ -2,17 +2,8 @@ package com.project.store.order.entity;
 
 import com.project.store.order.exception.InvalidOrderStatusTransitionException;
 import com.project.store.product.entity.Product;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
-import jakarta.persistence.Table;
+import com.project.store.user.entity.AppUser;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +22,10 @@ public class CustomerOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private AppUser user;
 
     @Column(name = "customer_name", nullable = false, length = 120)
     private String customerName;
@@ -55,6 +50,15 @@ public class CustomerOrder {
     public CustomerOrder(String customerName, String customerEmail){
         this.customerName = customerName;
         this.customerEmail = customerEmail;
+        this.status = OrderStatus.NEW;
+        this.totalAmount = BigDecimal.ZERO;
+        this.createdAt = Instant.now();
+    }
+
+    public CustomerOrder(AppUser user){
+        this.user = user;
+        this.customerName = user.getFirstName() + " " + user.getLastName().trim();
+        this.customerEmail = user.getEmail();
         this.status = OrderStatus.NEW;
         this.totalAmount = BigDecimal.ZERO;
         this.createdAt = Instant.now();

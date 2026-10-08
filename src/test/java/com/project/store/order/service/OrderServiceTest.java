@@ -1,6 +1,9 @@
 package com.project.store.order.service;
 
 import com.project.store.order.dto.OrderCreateRequest;
+import com.project.store.user.entity.AppUser;
+import com.project.store.user.entity.UserRole;
+import com.project.store.user.repository.AppUserRepository;
 import com.project.store.order.dto.OrderItemRequest;
 import com.project.store.order.dto.OrderStatusUpdateRequest;
 import com.project.store.order.entity.CustomerOrder;
@@ -38,6 +41,9 @@ public class OrderServiceTest {
     private CustomerOrderRepository orderRepository;
 
     @Mock
+    private AppUserRepository userRepository;
+
+    @Mock
     private ProductRepository productRepository;
 
     @InjectMocks
@@ -45,6 +51,17 @@ public class OrderServiceTest {
 
     @Test
     void createsOrderAndAggregatesRepeatedProducts() {
+
+        AppUser user = new AppUser(
+                "jan@example.com",
+                "encoded-password",
+                "Jan",
+                "Kowalski",
+                UserRole.CUSTOMER
+        );
+
+        when(userRepository.findByEmailIgnoreCase("jan@example.com"))
+                .thenReturn(Optional.of(user));
         Product product = org.mockito.Mockito.mock(Product.class);
 
         when(product.getId()).thenReturn(1L);
@@ -57,13 +74,15 @@ public class OrderServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         OrderCreateRequest request = new OrderCreateRequest(
-                "Jan Kowalski",
-                "JAN@EXAMPLE.COM",
-                List.of(new OrderItemRequest(1L,1),
-                        new OrderItemRequest(1L,2)
+                List.of(
+                        new OrderItemRequest(1L, 1),
+                        new OrderItemRequest(1L, 2)
                 )
         );
-        var response = orderService.create(request);
+        var response = orderService.create(
+                request,
+                "jan@example.com"
+        );
 
         assertThat(response.customerName()).isEqualTo("Jan Kowalski");
         assertThat(response.customerEmail()).isEqualTo("jan@example.com");
@@ -79,6 +98,18 @@ public class OrderServiceTest {
 
     @Test
     void doesNotSaveOrderWhenStockIsInsufficient() {
+
+        AppUser user = new AppUser(
+                "jan@example.com",
+                "encoded-password",
+                "Jan",
+                "Kowalski",
+                UserRole.CUSTOMER
+        );
+
+        when(userRepository.findByEmailIgnoreCase("jan@example.com"))
+                .thenReturn(Optional.of(user));
+
         Product product = org.mockito.Mockito.mock(Product.class);
 
         when(productRepository.findByIdForUpdate(1L))
@@ -89,12 +120,12 @@ public class OrderServiceTest {
                 .decreaseStock(2);
 
         OrderCreateRequest request = new OrderCreateRequest(
-                "Jan Kowalski",
-                "jan@example.com",
-                List.of(new OrderItemRequest(1L,2))
+                List.of(new OrderItemRequest(1L, 2))
         );
 
-        assertThatThrownBy(() -> orderService.create(request))
+        assertThatThrownBy(() ->
+                orderService.create(request, "jan@example.com")
+        )
                 .isInstanceOf(InsufficientStockException.class)
                 .hasMessage("Product with id 1 has only 1 item available, requested 2");
 

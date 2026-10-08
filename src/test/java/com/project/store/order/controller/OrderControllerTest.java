@@ -34,9 +34,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
+import java.util.Collections;
+
 @AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(OrderController.class)
 public class OrderControllerTest {
+    private final Authentication authenticatedUser =
+            new UsernamePasswordAuthenticationToken(
+                    "jan@example.com",
+                    null,
+                    Collections.emptyList()
+            );
 
     @Autowired
     private MockMvc mockMvc;
@@ -54,7 +65,10 @@ public class OrderControllerTest {
             new BigDecimal("399.98")
         );
 
-        when(orderService.create(any(OrderCreateRequest.class)))
+        when(orderService.create(
+                any(OrderCreateRequest.class),
+                eq("jan@example.com")
+        ))
                 .thenReturn(new OrderResponse(
                         10L,
                         "Jan Kowalski",
@@ -65,11 +79,10 @@ public class OrderControllerTest {
                         List.of(item)
                 ));
         mockMvc.perform(post("/api/orders")
+                .principal(authenticatedUser)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                         "customerName": "Jan Kowalski",
-                         "customerEmail": "jan@example.com",
                          "items":[
                          {
                            "productId": 1,
@@ -88,32 +101,34 @@ public class OrderControllerTest {
     @Test
     void rejectInvalidOrder() throws Exception {
         mockMvc.perform(post("/api/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                        .principal(authenticatedUser)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                         {
-                         "customerName": "",
-                         "customerEmail": "invalid-email",
-                         "items":[]
+                          "items": []
                         }
                         """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").value("Validation Failed"))
-                .andExpect(jsonPath("$.errors.customerName").value("Customer name is required"))
-                .andExpect(jsonPath("$.errors.customerEmail").value("Customer email must be valid"))
-                .andExpect(jsonPath("$.errors.items").value("Order must contain at least one item"));
+                .andExpect(jsonPath("$.title")
+                        .value("Validation Failed"))
+                .andExpect(jsonPath("$.errors.items")
+                        .value("Order must contain at least one item"));
+
         verifyNoInteractions(orderService);
     }
     @Test
     void returnsConflictWhenStockIsInsufficient() throws Exception {
-        when(orderService.create(any(OrderCreateRequest.class)))
+        when(orderService.create(
+                any(OrderCreateRequest.class),
+                eq("jan@example.com")
+        ))
                 .thenThrow(new InsufficientStockException(1L,1,2));
 
         mockMvc.perform(post("/api/orders")
+                .principal(authenticatedUser)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                         "customerName": "Jan Kowalski",
-                         "customerEmail": "jan@example.com",
                          "items":[
                          {
                            "productId": 1,

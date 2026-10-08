@@ -7,6 +7,7 @@ import com.project.store.order.dto.OrderResponse;
 import com.project.store.order.dto.OrderSummaryResponse;
 import com.project.store.order.service.OrderService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -24,8 +25,14 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderResponse create(@Valid @RequestBody OrderCreateRequest request){
-        return orderService.create(request);
+    public OrderResponse create(
+            @Valid @RequestBody OrderCreateRequest request,
+            Authentication authentication
+    ) {
+        return orderService.create(
+                request,
+                authentication.getName()
+        );
     }
 
     @GetMapping
