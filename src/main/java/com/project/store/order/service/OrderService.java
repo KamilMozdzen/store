@@ -90,14 +90,33 @@ public class OrderService {
                 items
         );
     }
-    public PageResponse<OrderSummaryResponse> findAll(Pageable pageable) {
-        Page<OrderSummaryResponse> orders = orderRepository
-                .findAll(pageable)
-                .map(this::toSummaryResponse);
-        return PageResponse.from(orders);
+
+    public PageResponse<OrderSummaryResponse> findAll(
+            Pageable pageable,
+            String authenticatedEmail,
+            boolean admin
+    ){
+        Page<CustomerOrder> orders = admin
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findAllByUserEmailIgnoreCase(
+                        authenticatedEmail, pageable);
+
+        return PageResponse.from(orders.map(this::toSummaryResponse));
     }
-    public OrderResponse findById(Long id) {
-        CustomerOrder order = orderRepository.findDetailedById(id)
+
+    public OrderResponse findById(
+            Long id,
+            String authenticatedEmail,
+            boolean admin
+    ) {
+        CustomerOrder order = (
+                admin
+                        ? orderRepository.findDetailedById(id)
+                        : orderRepository.findDetailedByIdAndUserEmail(
+                        id,
+                        authenticatedEmail
+                )
+        )
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
         return toResponse(order);

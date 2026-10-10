@@ -29,6 +29,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/products/**",
                                          "/api/categories/**"
                         ).hasRole("ADMIN")
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/orders/**"
+                        ).hasRole("ADMIN")
                         .requestMatchers("/api/orders/**").authenticated()
                         .anyRequest().authenticated()
                 )

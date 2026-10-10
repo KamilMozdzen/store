@@ -36,13 +36,28 @@ public class OrderController {
     }
 
     @GetMapping
-    public PageResponse<OrderSummaryResponse> findAll(@PageableDefault(size = 20, sort = "createdAt") Pageable pageable){
-        return orderService.findAll(pageable);
+    public PageResponse<OrderSummaryResponse> findAll(
+            @PageableDefault(size = 20, sort = "createdAt")
+            Pageable pageable,
+            Authentication authentication
+    ) {
+        return orderService.findAll(
+                pageable,
+                authentication.getName(),
+                isAdmin(authentication)
+        );
     }
 
     @GetMapping("/{id}")
-    public OrderResponse findById(@PathVariable Long id){
-        return orderService.findById(id);
+    public OrderResponse findById(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return orderService.findById(
+                id,
+                authentication.getName(),
+                isAdmin(authentication)
+        );
     }
     @PatchMapping("/{id}/status")
     public OrderResponse updateStatus(
@@ -50,5 +65,11 @@ public class OrderController {
             @Valid @RequestBody OrderStatusUpdateRequest request
     ){
         return orderService.updateStatus(id, request);
+    }
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ROLE_ADMIN")
+                );
     }
 }

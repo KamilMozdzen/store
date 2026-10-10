@@ -153,7 +153,11 @@ public class OrderControllerTest {
                 Instant.parse("2026-09-29T10:00:00Z")
         );
 
-        when(orderService.findAll(any(Pageable.class)))
+        when(orderService.findAll(
+                any(Pageable.class),
+                eq("jan@example.com"),
+                eq(false)
+        ))
                 .thenReturn(new PageResponse<>(
                         List.of(order),
                         0,
@@ -163,6 +167,7 @@ public class OrderControllerTest {
                 ));
 
         mockMvc.perform(get("/api/orders")
+                        .principal(authenticatedUser)
                         .param("page", "0")
                         .param("size", "20"))
                 .andExpect(status().isOk())
@@ -184,7 +189,11 @@ public class OrderControllerTest {
                 new BigDecimal("399.98")
         );
 
-        when(orderService.findById(10L))
+        when(orderService.findById(
+                10L,
+                "jan@example.com",
+                false
+        ))
                 .thenReturn(new OrderResponse(
                         10L,
                         "Jan Kowalski",
@@ -195,7 +204,8 @@ public class OrderControllerTest {
                         List.of(item)
                 ));
 
-        mockMvc.perform(get("/api/orders/{id}", 10L))
+        mockMvc.perform(get("/api/orders/{id}", 10L)
+                        .principal(authenticatedUser))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.customerEmail")
@@ -206,10 +216,15 @@ public class OrderControllerTest {
     }
     @Test
     void returnsNotFoundWhenOrderDoesNotExist() throws Exception {
-        when(orderService.findById(999999L))
+        when(orderService.findById(
+                999999L,
+                "jan@example.com",
+                false
+        ))
                 .thenThrow(new OrderNotFoundException(999999L));
 
-        mockMvc.perform(get("/api/orders/{id}", 999999L))
+        mockMvc.perform(get("/api/orders/{id}", 999999L)
+                        .principal(authenticatedUser))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Order Not Found"))
                 .andExpect(jsonPath("$.detail")
