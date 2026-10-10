@@ -5,6 +5,7 @@ import com.project.store.user.dto.UserResponse;
 import com.project.store.user.entity.AppUser;
 import com.project.store.user.entity.UserRole;
 import com.project.store.user.exception.EmailAlreadyUsedException;
+import com.project.store.user.exception.InvalidCredentialsException;
 import com.project.store.user.repository.AppUserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,15 @@ public class UserService {
         user.getRole(),
         user.getCreatedAt()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse findCurrentUser(String authenticatedEmail) {
+        AppUser user = userRepository
+                .findByEmailIgnoreCase(authenticatedEmail)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        return toResponse(user);
     }
 
 }

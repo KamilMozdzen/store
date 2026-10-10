@@ -18,6 +18,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.project.store.user.entity.AppUser;
+import com.project.store.user.entity.UserRole;
+import com.project.store.user.exception.InvalidCredentialsException;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
@@ -95,5 +103,49 @@ class UserServiceTest {
 
         verifyNoInteractions(passwordEncoder);
         verify(userRepository, never()).save(any(AppUser.class));
+    }
+    @Test
+    void returnsCurrentUser() {
+        AppUser user = new AppUser(
+                "kamil@example.com",
+                "encoded-password",
+                "Kamil",
+                "Mozdzen",
+                UserRole.CUSTOMER
+        );
+
+        when(userRepository.findByEmailIgnoreCase(
+                "kamil@example.com"
+        )).thenReturn(Optional.of(user));
+
+        UserResponse response = userService.findCurrentUser(
+                "kamil@example.com"
+        );
+
+        assertAll(
+                () -> assertEquals(
+                        "kamil@example.com",
+                        response.email()
+                ),
+                () -> assertEquals("Kamil", response.firstName()),
+                () -> assertEquals("Mozdzen", response.lastName()),
+                () -> assertEquals(
+                        UserRole.CUSTOMER,
+                        response.role()
+                )
+        );
+    }
+    @Test
+    void rejectsCurrentUserWhenAccountDoesNotExist() {
+        when(userRepository.findByEmailIgnoreCase(
+                "missing@example.com"
+        )).thenReturn(Optional.empty());
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.findCurrentUser(
+                        "missing@example.com"
+                )
+        );
     }
 }
