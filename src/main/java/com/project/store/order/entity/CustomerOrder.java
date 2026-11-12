@@ -19,6 +19,9 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerOrder {
 
+    @Embedded
+    private ShippingAddress shippingAddress;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -55,14 +58,20 @@ public class CustomerOrder {
         this.createdAt = Instant.now();
     }
 
-    public CustomerOrder(AppUser user){
+    public CustomerOrder(
+            AppUser user,
+            ShippingAddress shippingAddress){
         this.user = user;
-        this.customerName = user.getFirstName() + " " + user.getLastName().trim();
+        this.shippingAddress = shippingAddress;
+        this.customerName = (user.getFirstName() + " " + user.getLastName()
+        ).trim();
         this.customerEmail = user.getEmail();
         this.status = OrderStatus.NEW;
         this.totalAmount = BigDecimal.ZERO;
         this.createdAt = Instant.now();
     }
+
+
     public void addProduct(Product product, int quantity){
         OrderItem item = new OrderItem(this, product, quantity);
         items.add(item);

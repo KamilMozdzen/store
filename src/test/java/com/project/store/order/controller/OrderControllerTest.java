@@ -10,6 +10,7 @@ import com.project.store.order.dto.OrderSummaryResponse;
 import com.project.store.order.entity.OrderStatus;
 import com.project.store.order.exception.OrderNotFoundException;
 import com.project.store.order.service.OrderService;
+import com.project.store.order.dto.ShippingAddressResponse;
 import com.project.store.product.exception.InsufficientStockException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +74,7 @@ public class OrderControllerTest {
                         10L,
                         "Jan Kowalski",
                         "jan@example.com",
+                        shippingAddressResponse(),
                         OrderStatus.NEW,
                         new BigDecimal("399.98"),
                         Instant.parse("2026-09-29T10:00:00Z"),
@@ -81,17 +83,30 @@ public class OrderControllerTest {
         mockMvc.perform(post("/api/orders")
                 .principal(authenticatedUser)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                         "items":[
-                         {
-                           "productId": 1,
-                           "quantity": 2
-                           }
-                           ]
-                        }
-                        """))
+                        .content("""
+        {
+          "shippingAddress": {
+            "recipient": "Jan Kowalski",
+            "street": "Długa 10",
+            "city": "Kraków",
+            "postalCode": "30-001",
+            "countryCode": "PL"
+          },
+          "items": [
+            {
+              "productId": 1,
+              "quantity": 2
+            }
+          ]
+        }
+        """))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.shippingAddress.recipient")
+                        .value("Jan Kowalski"))
+                .andExpect(jsonPath("$.shippingAddress.city")
+                        .value("Kraków"))
+                .andExpect(jsonPath("$.shippingAddress.countryCode")
+                        .value("PL"))
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.status").value("NEW"))
                 .andExpect(jsonPath("$.totalAmount").value(399.98))
@@ -109,6 +124,8 @@ public class OrderControllerTest {
                         }
                         """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.shippingAddress")
+                        .value("Shipping address is required"))
                 .andExpect(jsonPath("$.title")
                         .value("Validation Failed"))
                 .andExpect(jsonPath("$.errors.items")
@@ -127,16 +144,23 @@ public class OrderControllerTest {
         mockMvc.perform(post("/api/orders")
                 .principal(authenticatedUser)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                         "items":[
-                         {
-                           "productId": 1,
-                           "quantity": 2
-                         }
-                         ]
-                        }
-                        """))
+                        .content("""
+        {
+          "shippingAddress": {
+            "recipient": "Jan Kowalski",
+            "street": "Długa 10",
+            "city": "Kraków",
+            "postalCode": "30-001",
+            "countryCode": "PL"
+          },
+          "items": [
+            {
+              "productId": 1,
+              "quantity": 2
+            }
+          ]
+        }
+        """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value("Insufficient Stock"))
                 .andExpect(jsonPath("$.detail").value("Product with id 1 has only 1 item available, requested 2"
@@ -198,6 +222,7 @@ public class OrderControllerTest {
                         10L,
                         "Jan Kowalski",
                         "jan@example.com",
+                        shippingAddressResponse(),
                         OrderStatus.NEW,
                         new BigDecimal("399.98"),
                         Instant.parse("2026-09-29T10:00:00Z"),
@@ -239,6 +264,7 @@ public class OrderControllerTest {
                 10L,
                 "Jan Kowalski",
                 "jan@example.com",
+                shippingAddressResponse(),
                 OrderStatus.PAID,
                 new BigDecimal("399.98"),
                 Instant.parse("2026-09-29T10:00:00Z"),
@@ -296,5 +322,56 @@ public class OrderControllerTest {
                         .value("Validation Failed"))
                 .andExpect(jsonPath("$.errors.status")
                         .value("Status is required"));
+    }
+
+    @Test
+    void rejectsInvalidShippingAddress() throws Exception {
+        mockMvc.perform(post("/api/orders")
+                        .principal(authenticatedUser)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "shippingAddress": {
+                                "recipient": "",
+                                "street": "",
+                                "city": "",
+                                "postalCode": "",
+                                "countryCode": "POL"
+                              },
+                              "items": [
+                                {
+                                  "productId": 1,
+                                  "quantity": 1
+                                }
+                              ]
+                            }
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath(
+                        "$.errors['shippingAddress.recipient']"
+                ).value("Recipient is required"))
+                .andExpect(jsonPath(
+                        "$.errors['shippingAddress.street']"
+                ).value("Street is required"))
+                .andExpect(jsonPath(
+                        "$.errors['shippingAddress.city']"
+                ).value("City is required"))
+                .andExpect(jsonPath(
+                        "$.errors['shippingAddress.postalCode']"
+                ).value("Postal code is required"))
+                .andExpect(jsonPath(
+                        "$.errors['shippingAddress.countryCode']"
+                ).value("Country code must contain 2 letters"));
+
+        verifyNoInteractions(orderService);
+    }
+    private ShippingAddressResponse shippingAddressResponse() {
+        return new ShippingAddressResponse(
+                "Jan Kowalski",
+                "Długa 10",
+                "Kraków",
+                "30-001",
+                "PL"
+        );
     }
 }

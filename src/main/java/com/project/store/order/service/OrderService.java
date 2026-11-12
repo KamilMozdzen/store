@@ -15,6 +15,7 @@ import com.project.store.order.entity.OrderStatus;
 import com.project.store.user.entity.AppUser;
 import com.project.store.user.exception.InvalidCredentialsException;
 import com.project.store.user.repository.AppUserRepository;
+import com.project.store.order.entity.ShippingAddress;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Locale;
 
 @Transactional(readOnly = true)
 @Service
@@ -44,7 +46,25 @@ public class OrderService {
         AppUser user = userRepository
                 .findByEmailIgnoreCase(authenticatedEmail)
                 .orElseThrow(InvalidCredentialsException::new);
-        CustomerOrder order = new CustomerOrder(user);
+
+                ShippingAddressRequest addressRequest =
+                request.shippingAddress();
+
+                ShippingAddress shippingAddress = new ShippingAddress(
+                addressRequest.recipient().trim(),
+                addressRequest.street().trim(),
+                addressRequest.city().trim(),
+                addressRequest.postalCode().trim(),
+                addressRequest.countryCode()
+                        .trim()
+                        .toUpperCase(Locale.ROOT)
+        );
+
+
+        CustomerOrder order = new CustomerOrder(
+                user,
+                shippingAddress
+        );
 
         Map<Long, Integer> quantities = aggregateItems(request);
 
@@ -84,6 +104,7 @@ public class OrderService {
                 order.getId(),
                 order.getCustomerName(),
                 order.getCustomerEmail(),
+                toAddressResponse(order.getShippingAddress()),
                 order.getStatus(),
                 order.getTotalAmount(),
                 order.getCreatedAt(),
@@ -146,6 +167,22 @@ public class OrderService {
                     item.getProduct().increaseStock(item.getQuantity()));
         }
         return toResponse(order);
+    }
+
+    private ShippingAddressResponse toAddressResponse(
+            ShippingAddress address
+    ) {
+        if (address == null) {
+            return null;
+        }
+
+        return new ShippingAddressResponse(
+                address.getRecipient(),
+                address.getStreet(),
+                address.getCity(),
+                address.getPostalCode(),
+                address.getCountryCode()
+        );
     }
 
 }

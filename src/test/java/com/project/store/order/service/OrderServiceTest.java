@@ -1,6 +1,7 @@
 package com.project.store.order.service;
 
 import com.project.store.order.dto.OrderCreateRequest;
+import com.project.store.order.dto.ShippingAddressRequest;
 import com.project.store.user.entity.AppUser;
 import com.project.store.user.entity.UserRole;
 import com.project.store.user.repository.AppUserRepository;
@@ -74,6 +75,7 @@ public class OrderServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         OrderCreateRequest request = new OrderCreateRequest(
+                shippingAddressRequest(),
                 List.of(
                         new OrderItemRequest(1L, 1),
                         new OrderItemRequest(1L, 2)
@@ -86,6 +88,16 @@ public class OrderServiceTest {
 
         assertThat(response.customerName()).isEqualTo("Jan Kowalski");
         assertThat(response.customerEmail()).isEqualTo("jan@example.com");
+        assertThat(response.shippingAddress().recipient())
+                .isEqualTo("Jan Kowalski");
+        assertThat(response.shippingAddress().street())
+                .isEqualTo("Długa 10");
+        assertThat(response.shippingAddress().city())
+                .isEqualTo("Kraków");
+        assertThat(response.shippingAddress().postalCode())
+                .isEqualTo("30-001");
+        assertThat(response.shippingAddress().countryCode())
+                .isEqualTo("PL");
         assertThat(response.totalAmount()).isEqualByComparingTo("599.97");
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().quantity()).isEqualTo(3);
@@ -120,6 +132,7 @@ public class OrderServiceTest {
                 .decreaseStock(2);
 
         OrderCreateRequest request = new OrderCreateRequest(
+                shippingAddressRequest(),
                 List.of(new OrderItemRequest(1L, 2))
         );
 
@@ -313,6 +326,15 @@ public class OrderServiceTest {
         verify(orderRepository, never()).findDetailedByIdAndUserEmail(
                 10L,
                 "admin@example.com"
+        );
+    }
+    private ShippingAddressRequest shippingAddressRequest() {
+        return new ShippingAddressRequest(
+                " Jan Kowalski ",
+                " Długa 10 ",
+                " Kraków ",
+                " 30-001 ",
+                "pl"
         );
     }
 }
