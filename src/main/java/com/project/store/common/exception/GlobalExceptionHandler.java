@@ -1,5 +1,6 @@
 package com.project.store.common.exception;
 
+import com.project.store.cart.exception.CartItemNotFoundException;
 import com.project.store.category.exception.CategoryAlreadyExistsException;
 import com.project.store.category.exception.CategoryInUseException;
 import com.project.store.category.exception.CategoryNotFoundException;
@@ -120,6 +121,15 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Invalid Credentials");
+        return problem;
+    }
+    @ExceptionHandler(CartItemNotFoundException.class)
+    public ProblemDetail handleCartItemNotFound(CartItemNotFoundException exception){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage()
+        );
+        problem.setTitle("Cart Item Not Found");
         return problem;
     }
 }
