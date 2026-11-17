@@ -1,5 +1,7 @@
 package com.project.store.order.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 import com.project.store.order.dto.OrderStatusUpdateRequest;
 import com.project.store.common.dto.PageResponse;
 import com.project.store.order.dto.OrderCreateRequest;
@@ -13,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {

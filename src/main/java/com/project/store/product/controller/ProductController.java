@@ -5,6 +5,7 @@ import com.project.store.product.dto.ProductCreateRequest;
 import com.project.store.product.dto.ProductResponse;
 import com.project.store.product.dto.ProductUpdateRequest;
 import com.project.store.product.service.ProductService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +34,7 @@ public class ProductController {
     }
 
     @PostMapping
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductResponse create(@Valid @RequestBody ProductCreateRequest request){
         return productService.create(request);
@@ -43,11 +45,13 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
     public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request){
         return productService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id){
         productService.delete(id);

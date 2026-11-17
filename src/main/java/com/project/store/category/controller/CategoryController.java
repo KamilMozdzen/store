@@ -4,6 +4,7 @@ import com.project.store.category.dto.CategoryCreateRequest;
 import com.project.store.category.dto.CategoryResponse;
 import com.project.store.category.dto.CategoryUpdateRequest;
 import com.project.store.category.service.CategoryService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,7 @@ public class CategoryController {
     }
 
     @PostMapping
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryResponse create(@Valid @RequestBody CategoryCreateRequest request){
         return categoryService.create(request);
@@ -35,6 +37,7 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
     public CategoryResponse update(
             @PathVariable Long id,
             @Valid @RequestBody CategoryUpdateRequest request
@@ -43,6 +46,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id){
         categoryService.delete(id);
