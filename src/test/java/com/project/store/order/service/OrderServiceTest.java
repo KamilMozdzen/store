@@ -1,5 +1,11 @@
 package com.project.store.order.service;
 
+
+import com.project.store.cart.dto.CartCheckoutRequest;
+import com.project.store.cart.entity.ShoppingCart;
+import com.project.store.cart.exception.EmptyCartException;
+import com.project.store.cart.repository.ShoppingCartRepository;
+import com.project.store.order.dto.ShippingAddressRequest;
 import com.project.store.order.dto.OrderCreateRequest;
 import com.project.store.order.dto.ShippingAddressRequest;
 import com.project.store.user.entity.AppUser;
@@ -34,6 +40,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
@@ -49,6 +58,9 @@ public class OrderServiceTest {
 
     @InjectMocks
     private OrderService orderService;
+
+    @Mock
+    private ShoppingCartRepository cartRepository;
 
     @Test
     void createsOrderAndAggregatesRepeatedProducts() {
@@ -336,5 +348,129 @@ public class OrderServiceTest {
                 " 30-001 ",
                 "pl"
         );
+    }
+    @Test
+    void checksOutShoppingCart() {
+        AppUser user = new AppUser(
+                "jan@example.com",
+                "encoded-password",
+                "Jan",
+                "Kowalski",
+                UserRole.CUSTOMER
+        );
+
+        Product product =
+                org.mockito.Mockito.mock(Product.class);
+
+        when(product.getId()).thenReturn(1L);
+        when(product.getName()).thenReturn("Klawiatura");
+        when(product.getPrice())
+                .thenReturn(new BigDecimal("199.99"));
+
+        ShoppingCart cart = new ShoppingCart(user);
+        cart.addProduct(product, 2);
+
+        when(userRepository.findByEmailIgnoreCase(
+                "jan@example.com"
+        )).thenReturn(Optional.of(user));
+
+        when(cartRepository
+                .findDetailedByUserEmailForUpdate(
+                        "jan@example.com"
+                ))
+                .thenReturn(Optional.of(cart));
+
+        when(productRepository.findByIdForUpdate(1L))
+                .thenReturn(Optional.of(product));
+
+        when(orderRepository.save(any(CustomerOrder.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0)
+                );
+
+        when(cartRepository.save(cart))
+                .thenReturn(cart);
+
+        CartCheckoutRequest request =
+                new CartCheckoutRequest(
+                        new ShippingAddressRequest(
+                                "Jan Kowalski",
+                                "Długa 10",
+                                "Kraków",
+                                "30-001",
+                                "pl"
+                        )
+                );
+
+        var response = orderService.checkoutCart(
+                request,
+                "jan@example.com"
+        );
+
+        assertThat(response.customerEmail())
+                .isEqualTo("jan@example.com");
+        assertThat(response.shippingAddress().countryCode())
+                .isEqualTo("PL");
+        assertThat(response.totalAmount())
+                .isEqualByComparingTo("399.98");
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().quantity())
+                .isEqualTo(2);
+        assertThat(cart.getItems()).isEmpty();
+
+        verify(product).decreaseStock(2);
+        verify(orderRepository).save(
+                any(CustomerOrder.class)
+        );
+        verify(cartRepository).save(cart);
+    }
+
+    @Test
+    void rejectsCheckoutWhenCartIsEmpty() {
+        AppUser user = new AppUser(
+                "jan@example.com",
+                "encoded-password",
+                "Jan",
+                "Kowalski",
+                UserRole.CUSTOMER
+        );
+
+        ShoppingCart cart = new ShoppingCart(user);
+
+        when(userRepository.findByEmailIgnoreCase(
+                "jan@example.com"
+        )).thenReturn(Optional.of(user));
+
+        when(cartRepository
+                .findDetailedByUserEmailForUpdate(
+                        "jan@example.com"
+                ))
+                .thenReturn(Optional.of(cart));
+
+        CartCheckoutRequest request =
+                new CartCheckoutRequest(
+                        new ShippingAddressRequest(
+                                "Jan Kowalski",
+                                "Długa 10",
+                                "Kraków",
+                                "30-001",
+                                "PL"
+                        )
+                );
+
+        assertThatThrownBy(() ->
+                orderService.checkoutCart(
+                        request,
+                        "jan@example.com"
+                )
+        )
+                .isInstanceOf(EmptyCartException.class)
+                .hasMessage(
+                        "Cart must contain at least one item"
+                );
+
+        verify(orderRepository, never())
+                .save(any(CustomerOrder.class));
+        verifyNoInteractions(productRepository);
     }
 }

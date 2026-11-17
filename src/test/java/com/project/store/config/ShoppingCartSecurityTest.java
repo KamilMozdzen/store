@@ -1,5 +1,6 @@
 package com.project.store.config;
 
+import com.project.store.order.service.OrderService;
 import com.project.store.cart.controller.ShoppingCartController;
 import com.project.store.cart.service.ShoppingCartService;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class ShoppingCartSecurityTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private OrderService orderService;
 
     @Test
     void rejectsAnonymousCartAccess() throws Exception {

@@ -1,5 +1,6 @@
 package com.project.store.common.exception;
 
+import com.project.store.cart.exception.EmptyCartException;
 import com.project.store.cart.exception.CartItemNotFoundException;
 import com.project.store.category.exception.CategoryAlreadyExistsException;
 import com.project.store.category.exception.CategoryInUseException;
@@ -130,6 +131,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Cart Item Not Found");
+        return problem;
+    }
+
+    @ExceptionHandler(EmptyCartException.class)
+    public ProblemDetail handleEmptyCart(EmptyCartException exception){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage()
+        );
+        problem.setTitle("Cart Is Empty");
         return problem;
     }
 }

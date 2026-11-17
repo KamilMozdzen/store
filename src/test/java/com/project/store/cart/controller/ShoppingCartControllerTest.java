@@ -1,5 +1,11 @@
 package com.project.store.cart.controller;
 
+import com.project.store.cart.exception.EmptyCartException;
+import com.project.store.cart.dto.CartCheckoutRequest;
+import com.project.store.order.dto.OrderResponse;
+import com.project.store.order.dto.ShippingAddressResponse;
+import com.project.store.order.entity.OrderStatus;
+import com.project.store.order.service.OrderService;
 import com.project.store.cart.dto.CartItemAddRequest;
 import com.project.store.cart.dto.CartItemQuantityRequest;
 import com.project.store.cart.dto.CartItemResponse;
@@ -38,6 +44,9 @@ class ShoppingCartControllerTest {
 
     @MockitoBean
     private ShoppingCartService cartService;
+
+    @MockitoBean
+    private OrderService orderService;
 
     private final Authentication authenticatedUser =
             new UsernamePasswordAuthenticationToken(
@@ -172,5 +181,102 @@ class ShoppingCartControllerTest {
                 new BigDecimal("399.98"),
                 Instant.parse("2026-11-16T10:00:00Z")
         );
+    }
+    @Test
+    void checksOutCart() throws Exception {
+        ShippingAddressResponse address =
+                new ShippingAddressResponse(
+                        "Jan Kowalski",
+                        "Długa 10",
+                        "Kraków",
+                        "30-001",
+                        "PL"
+                );
+
+        when(orderService.checkoutCart(
+                any(CartCheckoutRequest.class),
+                eq("jan@example.com")
+        )).thenReturn(new OrderResponse(
+                20L,
+                "Jan Kowalski",
+                "jan@example.com",
+                address,
+                OrderStatus.NEW,
+                new BigDecimal("399.98"),
+                Instant.parse("2026-11-17T10:00:00Z"),
+                List.of()
+        ));
+
+        mockMvc.perform(post("/api/cart/checkout")
+                        .principal(authenticatedUser)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "shippingAddress": {
+                                "recipient": "Jan Kowalski",
+                                "street": "Długa 10",
+                                "city": "Kraków",
+                                "postalCode": "30-001",
+                                "countryCode": "PL"
+                              }
+                            }
+                            """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(20))
+                .andExpect(jsonPath("$.status").value("NEW"))
+                .andExpect(jsonPath("$.totalAmount")
+                        .value(399.98))
+                .andExpect(jsonPath(
+                        "$.shippingAddress.city"
+                ).value("Kraków"));
+    }
+    @Test
+    void rejectsCheckoutWithoutShippingAddress()
+            throws Exception {
+        mockMvc.perform(post("/api/cart/checkout")
+                        .principal(authenticatedUser)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                            }
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title")
+                        .value("Validation Failed"))
+                .andExpect(jsonPath(
+                        "$.errors.shippingAddress"
+                ).value("Shipping address is required"));
+
+        verifyNoInteractions(orderService);
+    }
+    @Test
+    void returnsConflictWhenCheckingOutEmptyCart()
+            throws Exception {
+        when(orderService.checkoutCart(
+                any(CartCheckoutRequest.class),
+                eq("jan@example.com")
+        )).thenThrow(new EmptyCartException());
+
+        mockMvc.perform(post("/api/cart/checkout")
+                        .principal(authenticatedUser)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "shippingAddress": {
+                                "recipient": "Jan Kowalski",
+                                "street": "Długa 10",
+                                "city": "Kraków",
+                                "postalCode": "30-001",
+                                "countryCode": "PL"
+                              }
+                            }
+                            """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title")
+                        .value("Cart Is Empty"))
+                .andExpect(jsonPath("$.detail")
+                        .value(
+                                "Cart must contain at least one item"
+                        ));
     }
 }

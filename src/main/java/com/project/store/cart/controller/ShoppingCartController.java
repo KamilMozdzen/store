@@ -1,5 +1,8 @@
 package com.project.store.cart.controller;
 
+import com.project.store.cart.dto.CartCheckoutRequest;
+import com.project.store.order.dto.OrderResponse;
+import com.project.store.order.service.OrderService;
 import com.project.store.cart.dto.CartItemAddRequest;
 import com.project.store.cart.dto.CartItemQuantityRequest;
 import com.project.store.cart.dto.CartResponse;
@@ -23,9 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ShoppingCartController {
 
     private final ShoppingCartService cartService;
+    private final OrderService orderService;
 
-    public ShoppingCartController(ShoppingCartService cartService) {
+    public ShoppingCartController(ShoppingCartService cartService,
+                                  OrderService orderService) {
         this.cartService = cartService;
+        this.orderService = orderService;
     }
 
     @GetMapping
@@ -67,6 +73,18 @@ public class ShoppingCartController {
         return cartService.removeItem(
                 authentication.getName(),
                 productId
+        );
+    }
+
+    @PostMapping("/checkout")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OrderResponse checkout(
+            @Valid @RequestBody CartCheckoutRequest request,
+            Authentication authentication
+    ) {
+        return orderService.checkoutCart(
+                request,
+                authentication.getName()
         );
     }
 
